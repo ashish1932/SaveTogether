@@ -21,13 +21,13 @@ services:
           name: savetogether-redis
           property: connectionString
 
+  - type: redis
+    name: savetogether-redis
+    plan: starter
+    ipAllowList: []
+
 databases:
   - name: savetogether-db
     databaseName: savetogether_production
     user: savetogether_user
     plan: starter
-
-  - type: redis
-    name: savetogether-redis
-    plan: starter
-    ipAllowList: []
