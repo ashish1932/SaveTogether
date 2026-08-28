@@ -416,7 +416,7 @@ model Refund {
   bookingId          String
   amount             Float
   reason             String
-  status             RefundStatus        @default(PENDING)
+  status             RefundStatus        @default(REQUESTED)
   gatewayRefundId    String?
   requestedAt        DateTime            @default(now())
   processedAt        DateTime?
