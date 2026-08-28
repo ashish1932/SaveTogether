@@ -62,6 +62,24 @@ app.use(generalApiRateLimiter);
 // 4. Standard Response Interceptor
 app.use(responseInterceptor);
 
+// Root landing page handler to prevent 404 on browser root GET /
+app.get('/', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    name: 'SaveTogether Backend API',
+    version: '1.0.0',
+    status: 'ONLINE',
+    environment: config.app.environment,
+    health: '/api/v1/health',
+    docs: '/api/docs',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/favicon.ico', (req: Request, res: Response) => {
+  res.status(204).end();
+});
+
 // 5. API Documentation / Swagger Placeholder (/api/docs)
 app.get('/api/docs', (req: Request, res: Response) => {
   res.json({
