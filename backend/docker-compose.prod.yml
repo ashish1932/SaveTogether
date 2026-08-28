@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: savetogether_api_prod
+    restart: always
+    ports:
+      - '5000:5000'
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: savetogether_worker_prod
+    restart: always
+    command: node dist/index.js --worker
+    env_file:
+      - .env.production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: savetogether_db_prod
+    restart: always
+    environment:
+      POSTGRES_DB: savetogether_production
+      POSTGRES_USER: ${POSTGRES_USER:-savetogether_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ProductionSecret123!}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U savetogether_admin -d savetogether_production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: savetogether_redis_prod
+    restart: always
+    command: redis-server --requirepass ${REDIS_PASSWORD:-ProductionRedisSecret123!}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:

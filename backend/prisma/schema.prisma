@@ -1,0 +1,785 @@
+// SaveTogether Master Production Database Schema (Prisma ORM for PostgreSQL)
+// Architecture Phase 03 / Phase 04 / Phase 05 - Complete Master ER Diagram & Relations
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ==========================================
+// ENUMS & TYPES
+// ==========================================
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+  SUSPENDED
+  DELETED
+}
+
+enum RoleType {
+  SUPER_ADMIN
+  OPERATIONS_ADMIN
+  SUPPORT_ADMIN
+  FINANCE_ADMIN
+  MARKETING_ADMIN
+}
+
+enum BookingStatus {
+  PENDING_PAYMENT
+  CONFIRMED
+  DEMAND_AGGREGATING
+  ADMIN_PROCESSING
+  VENDOR_ASSIGNED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum CampaignStatus {
+  OPEN
+  THRESHOLD_REACHED
+  PROCESSING
+  VENDOR_ASSIGNED
+  SCHEDULED
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  CREATED
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum RefundStatus {
+  REQUESTED
+  PROCESSING
+  COMPLETED
+  FAILED
+  REJECTED
+}
+
+enum ReferralStatus {
+  INVITED
+  REGISTERED
+  BOOKED
+  QUALIFIED
+  REWARDED
+  EXPIRED
+  HOLD
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_FOR_USER
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+// ==========================================
+// 1. USER & ADDRESS DOMAIN
+// ==========================================
+
+model User {
+  id                 String              @id @default(uuid())
+  phone              String              @unique
+  name               String?
+  email              String?
+  profileImage       String?
+  status             UserStatus          @default(ACTIVE)
+  referralCode       String              @unique
+  referredById       String?
+  referredBy         User?               @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals          User[]              @relation("UserReferrals")
+  memberships        SocietyMembership[]
+  addresses          Address[]
+  bookings           Booking[]
+  demandItems        DemandItem[]
+  payments           Payment[]
+  rewardTransactions RewardTransaction[]
+  notifications      Notification[]
+  devices            Device[]
+  complaints         Complaint[]
+  reviews            Review[]
+  givenReferrals     Referral[]          @relation("ReferrerRelation")
+  receivedReferrals  Referral[]          @relation("ReferredUserRelation")
+  sessions           Session[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([phone])
+  @@index([referralCode])
+  @@index([email])
+}
+
+model OtpChallenge {
+  id                 String              @id @default(uuid())
+  mobile             String
+  otpHash            String
+  expiresAt          DateTime
+  attempts           Int                 @default(0)
+  maxAttempts        Int                 @default(5)
+  resendCount        Int                 @default(0)
+  verifiedAt         DateTime?
+  createdAt          DateTime            @default(now())
+
+  @@index([mobile, createdAt])
+  @@index([expiresAt])
+}
+
+model Session {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceId           String?
+  refreshTokenHash   String
+  platform           String?
+  userAgent          String?
+  ipAddress          String?
+  expiresAt          DateTime
+  lastUsedAt         DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime            @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model Address {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  societyId          String
+  society            Society             @relation(fields: [societyId], references: [id])
+  houseNo            String
+  blockNo            String
+  street             String?
+  city               String
+  state              String
+  pincode            String
+  landmark           String?
+  latitude           Float?
+  longitude          Float?
+  isDefault          Boolean             @default(false)
+  bookings           Booking[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([societyId])
+}
+
+// ==========================================
+// 2. SOCIETY DOMAIN
+// ==========================================
+
+model Society {
+  id                 String              @id @default(uuid())
+  name               String
+  address            String
+  city               String
+  state              String
+  pincode            String
+  latitude           Float?
+  longitude          Float?
+  totalBlocks        Int                 @default(1)
+  totalFlats         Int                 @default(50)
+  status             String              @default("ACTIVE")
+  memberships        SocietyMembership[]
+  addresses          Address[]
+  bookings           Booking[]
+  demandCampaigns    DemandCampaign[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([pincode])
+  @@index([city])
+}
+
+model SocietyMembership {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  societyId          String
+  society            Society             @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  flatNo             String
+  blockNo            String
+  status             String              @default("VERIFIED")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([userId, societyId])
+}
+
+// ==========================================
+// 3. SERVICE & PRICING DOMAIN
+// ==========================================
+
+model ServiceCategory {
+  id                 String              @id @default(uuid())
+  name               String              @unique
+  description        String?
+  iconName           String
+  sortOrder          Int                 @default(0)
+  isActive           Boolean             @default(true)
+  services           Service[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model Service {
+  id                 String              @id @default(uuid())
+  categoryId         String
+  category           ServiceCategory     @relation(fields: [categoryId], references: [id])
+  name               String
+  description        String
+  unitLabel          String
+  baseCatalogPrice   Float
+  iconName           String
+  durationMin        Int?                @default(60)
+  isActive           Boolean             @default(true)
+  pricingTiers       PricingTier[]
+  bookingItems       BookingItem[]
+  demandCampaigns    DemandCampaign[]
+  vendorServices     VendorService[]
+  reviews            Review[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model PricingTier {
+  id                 String              @id @default(uuid())
+  serviceId          String
+  service            Service             @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  minimumQuantity    Int
+  maximumQuantity    Int?
+  price              Float
+  tierLabel          String
+  status             String              @default("ACTIVE")
+  currentCampaigns   DemandCampaign[]    @relation("CurrentTier")
+  nextCampaigns      DemandCampaign[]    @relation("NextTier")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([serviceId, minimumQuantity])
+}
+
+// ==========================================
+// 4. DEMAND AGGREGATION DOMAIN
+// ==========================================
+
+model DemandCampaign {
+  id                 String              @id @default(uuid())
+  societyId          String
+  society            Society             @relation(fields: [societyId], references: [id])
+  serviceId          String
+  service            Service             @relation(fields: [serviceId], references: [id])
+  serviceDate        DateTime
+  currentQuantity    Int                 @default(0)
+  currentUnitPrice   Float
+  currentTierId      String?
+  currentTier        PricingTier?        @relation("CurrentTier", fields: [currentTierId], references: [id])
+  nextTierId         String?
+  nextTier           PricingTier?        @relation("NextTier", fields: [nextTierId], references: [id])
+  status             CampaignStatus      @default(OPEN)
+  expiryDate         DateTime
+  demandItems        DemandItem[]
+  bookings           Booking[]
+  assignments        VendorAssignment[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@unique([societyId, serviceId, serviceDate])
+  @@index([societyId, serviceDate])
+  @@index([serviceId, serviceDate])
+  @@index([status])
+}
+
+model DemandItem {
+  id                 String              @id @default(uuid())
+  campaignId         String
+  demandCampaign     DemandCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  bookingId          String              @unique
+  booking            Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  quantity           Int
+  status             String              @default("ACTIVE")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([campaignId])
+  @@index([bookingId])
+  @@index([userId])
+}
+
+// ==========================================
+// 5. BOOKING & TRANSACTION DOMAIN
+// ==========================================
+
+model Booking {
+  id                 String              @id @default(uuid())
+  bookingNumber      String              @unique
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  societyId          String
+  society            Society             @relation(fields: [societyId], references: [id])
+  addressId          String
+  address            Address             @relation(fields: [addressId], references: [id])
+  campaignId         String?
+  demandCampaign     DemandCampaign?     @relation(fields: [campaignId], references: [id])
+  quantity           Int
+  subtotal           Float
+  discount           Float               @default(0)
+  savings            Float               @default(0)
+  totalAmount        Float
+  serviceDate        DateTime
+  timeSlot           String
+  status             BookingStatus       @default(DEMAND_AGGREGATING)
+  bookingItems       BookingItem[]
+  payment            Payment?
+  vendorAssignment   VendorAssignment?   @relation(fields: [assignmentId], references: [id])
+  assignmentId       String?
+  demandItems        DemandItem[]
+  complaints         Complaint[]
+  review             Review?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([societyId])
+  @@index([status])
+  @@index([serviceDate])
+  @@index([createdAt])
+}
+
+model BookingItem {
+  id                 String              @id @default(uuid())
+  bookingId          String
+  booking            Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  serviceId          String
+  service            Service             @relation(fields: [serviceId], references: [id])
+  quantity           Int
+  unitPrice          Float
+  baseUnitPrice      Float
+  totalPrice         Float
+  createdAt          DateTime            @default(now())
+}
+
+model Payment {
+  id                 String              @id @default(uuid())
+  bookingId          String              @unique
+  booking            Booking             @relation(fields: [bookingId], references: [id])
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  paymentReference   String?             @unique
+  gatewayOrderId     String?
+  gatewayPaymentId   String?
+  amount             Float
+  currency           String              @default("INR")
+  paymentMethod      String              @default("UPI")
+  status             PaymentStatus       @default(PENDING)
+  paidAt             DateTime?
+  refund             Refund?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([bookingId])
+  @@index([userId])
+  @@index([status])
+}
+
+model Refund {
+  id                 String              @id @default(uuid())
+  paymentId          String              @unique
+  payment            Payment             @relation(fields: [paymentId], references: [id])
+  bookingId          String
+  amount             Float
+  reason             String
+  status             RefundStatus        @default(PENDING)
+  gatewayRefundId    String?
+  requestedAt        DateTime            @default(now())
+  processedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([paymentId])
+  @@index([bookingId])
+  @@index([status])
+}
+
+// ==========================================
+// 6. VENDOR DOMAIN (NO LOGIN IN V1)
+// ==========================================
+
+model Vendor {
+  id                 String              @id @default(uuid())
+  businessName       String
+  contactName        String
+  phone              String
+  email              String?
+  address            String
+  city               String
+  rating             Float               @default(5.0)
+  status             String              @default("ACTIVE")
+  vendorServices     VendorService[]
+  availabilities     VendorAvailability[]
+  assignments        VendorAssignment[]
+  priceHistory       VendorPriceHistory[]
+  settlements        VendorSettlement[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([city])
+  @@index([status])
+}
+
+model VendorService {
+  id                 String              @id @default(uuid())
+  vendorId           String
+  vendor             Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  serviceId          String
+  service            Service             @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  baseRate           Float
+  status             String              @default("ACTIVE")
+
+  @@unique([vendorId, serviceId])
+}
+
+model VendorAvailability {
+  id                 String              @id @default(uuid())
+  vendorId           String
+  vendor             Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  date               DateTime
+  timeSlot           String
+  capacity           Int                 @default(20)
+  bookedCapacity     Int                 @default(0)
+  createdAt          DateTime            @default(now())
+
+  @@index([vendorId, date])
+}
+
+model VendorAssignment {
+  id                 String              @id @default(uuid())
+  campaignId         String
+  campaign           DemandCampaign      @relation(fields: [campaignId], references: [id])
+  vendorId           String
+  vendor             Vendor              @relation(fields: [vendorId], references: [id])
+  quantity           Int
+  finalRate          Float
+  totalPayout        Float
+  scheduledDate      DateTime
+  timeSlot           String
+  status             String              @default("ASSIGNED")
+  assignedBy         String
+  bookings           Booking[]
+  negotiations       VendorNegotiation[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([campaignId])
+  @@index([vendorId])
+}
+
+model VendorNegotiation {
+  id                 String              @id @default(uuid())
+  assignmentId       String
+  assignment         VendorAssignment    @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  offeredRate        Float
+  agreedRate         Float
+  notes              String?
+  createdAt          DateTime            @default(now())
+}
+
+model VendorPriceHistory {
+  id                 String              @id @default(uuid())
+  vendorId           String
+  vendor             Vendor              @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  serviceId          String
+  rate               Float
+  effectiveDate      DateTime            @default(now())
+}
+
+model VendorSettlement {
+  id                 String              @id @default(uuid())
+  vendorId           String
+  vendor             Vendor              @relation(fields: [vendorId], references: [id])
+  amount             Float
+  status             String              @default("PENDING")
+  periodStart        DateTime
+  periodEnd          DateTime
+  settledAt          DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([vendorId])
+  @@index([status])
+}
+
+// ==========================================
+// 7. REFERRAL & REWARDS DOMAIN
+// ==========================================
+
+model Referral {
+  id                 String              @id @default(uuid())
+  referrerUserId     String
+  referrer           User                @relation("ReferrerRelation", fields: [referrerUserId], references: [id])
+  referredUserId     String              @unique
+  referred           User                @relation("ReferredUserRelation", fields: [referredUserId], references: [id])
+  referralCode       String
+  status             ReferralStatus      @default(REGISTERED)
+  qualifyingBookingId String?
+  qualifiedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([referrerUserId])
+  @@index([referredUserId])
+  @@index([referralCode])
+}
+
+model RewardTransaction {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type               String              @default("CREDIT")
+  amount             Float
+  referenceType      String?
+  referenceId        String?
+  description        String
+  status             String              @default("COMPLETED")
+  createdAt          DateTime            @default(now())
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ==========================================
+// 8. DEVICE, NOTIFICATIONS & SUPPORT DOMAIN
+// ==========================================
+
+model Device {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform           String              @default("ANDROID")
+  pushToken          String
+  lastSeenAt         DateTime            @default(now())
+  deliveries         NotificationDelivery[]
+
+  @@unique([userId, id])
+  @@index([pushToken])
+}
+
+model Notification {
+  id                 String              @id @default(uuid())
+  userId             String
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title              String
+  message            String
+  type               String              @default("TRANSACTIONAL")
+  data               String?
+  isRead             Boolean             @default(false)
+  deliveries         NotificationDelivery[]
+  createdAt          DateTime            @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
+
+model NotificationDelivery {
+  id                 String              @id @default(uuid())
+  notificationId     String
+  notification       Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  deviceId           String
+  device             Device              @relation(fields: [deviceId], references: [id])
+  status             NotificationStatus  @default(PENDING)
+  sentAt             DateTime?
+  errorMessage       String?
+  createdAt          DateTime            @default(now())
+
+  @@unique([notificationId, deviceId])
+}
+
+model Complaint {
+  id                 String              @id @default(uuid())
+  complaintNumber    String              @unique
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  bookingId          String
+  booking            Booking             @relation(fields: [bookingId], references: [id])
+  category           String
+  subject            String
+  description        String
+  status             ComplaintStatus     @default(OPEN)
+  priority           String              @default("MEDIUM")
+  assignedAdminId    String?
+  assignedAdmin      AdminUser?          @relation(fields: [assignedAdminId], references: [id])
+  messages           ComplaintMessage[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([bookingId])
+  @@index([status])
+}
+
+model ComplaintMessage {
+  id                 String              @id @default(uuid())
+  complaintId        String
+  complaint          Complaint           @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  senderType         String
+  senderId           String
+  message            String
+  attachment         String?
+  createdAt          DateTime            @default(now())
+
+  @@index([complaintId])
+}
+
+model Review {
+  id                 String              @id @default(uuid())
+  bookingId          String              @unique
+  booking            Booking             @relation(fields: [bookingId], references: [id])
+  userId             String
+  user               User                @relation(fields: [userId], references: [id])
+  serviceId          String
+  service            Service             @relation(fields: [serviceId], references: [id])
+  overallRating      Int
+  serviceQuality     Int?
+  professionalism    Int?
+  valueForMoney      Int?
+  comment            String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([userId])
+  @@index([serviceId])
+}
+
+// ==========================================
+// 9. ADMIN, GOVERNANCE & AUDIT DOMAIN
+// ==========================================
+
+model AdminUser {
+  id                 String              @id @default(uuid())
+  name               String
+  email              String              @unique
+  passwordHash       String
+  roleType           RoleType            @default(OPERATIONS_ADMIN)
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean             @default(true)
+  status             String              @default("ACTIVE")
+  lastLogin          DateTime?
+  roleId             String?
+  role               Role?               @relation(fields: [roleId], references: [id])
+  assignedComplaints Complaint[]
+  auditLogs          AuditLog[]
+  sessions           AdminSession[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model AdminSession {
+  id                 String              @id @default(uuid())
+  adminUserId        String
+  adminUser          AdminUser           @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  refreshTokenHash   String
+  ipAddress          String?
+  userAgent          String?
+  expiresAt          DateTime
+  lastUsedAt         DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime            @default(now())
+
+  @@index([adminUserId])
+  @@index([expiresAt])
+  @@index([revokedAt])
+}
+
+model Admin2FaChallenge {
+  id                 String              @id @default(uuid())
+  adminUserId        String
+  challengeId        String              @unique
+  twoFactorCode      String
+  expiresAt          DateTime
+  attempts           Int                 @default(0)
+  maxAttempts        Int                 @default(5)
+  verifiedAt         DateTime?
+  createdAt          DateTime            @default(now())
+
+  @@index([adminUserId])
+  @@index([expiresAt])
+}
+
+model Role {
+  id                 String              @id @default(uuid())
+  name               String              @unique
+  description        String?
+  admins             AdminUser[]
+  permissions        RolePermission[]
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+}
+
+model Permission {
+  id                 String              @id @default(uuid())
+  name               String              @unique
+  description        String?
+  roles              RolePermission[]
+  createdAt          DateTime            @default(now())
+}
+
+model RolePermission {
+  roleId             String
+  permissionId       String
+  role               Role                @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission         Permission          @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model PlatformSetting {
+  id                 String              @id @default(uuid())
+  key                String              @unique
+  value              String
+  updatedAt          DateTime            @updatedAt
+}
+
+model AuditLog {
+  id                 String              @id @default(uuid())
+  adminUserId        String?
+  admin              AdminUser?          @relation(fields: [adminUserId], references: [id])
+  module             String
+  action             String
+  entityType         String?
+  entityId           String?
+  beforeData         String?
+  afterData          String?
+  reason             String?
+  ipAddress          String?
+  createdAt          DateTime            @default(now())
+
+  @@index([adminUserId])
+  @@index([createdAt])
+}

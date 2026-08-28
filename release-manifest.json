@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0",
+  "releaseDate": "2026-08-28",
+  "releaseBranch": "release/v1.0.0",
+  "components": {
+    "backend": {
+      "version": "1.0.0",
+      "framework": "Express + TypeScript",
+      "database": "PostgreSQL 16 + Prisma",
+      "queue": "Redis 7 + BullMQ",
+      "apiPrefix": "/api/v1"
+    },
+    "mobile": {
+      "version": "1.0.0",
+      "framework": "React Native + Expo",
+      "platform": ["android", "ios"]
+    },
+    "admin": {
+      "version": "1.0.0",
+      "framework": "React + Vite"
+    }
+  },
+  "testSuites": {
+    "critical": "test/critical/six-invariants.spec.ts",
+    "e2e": "test/e2e/full-system-journey.spec.ts",
+    "integration": "test/integration/frontend-integration.spec.ts",
+    "staging": "test/staging/staging-smoke.spec.ts",
+    "production": "test/production/production-smoke.spec.ts",
+    "monitoring": "test/monitoring/monitoring-metrics.spec.ts",
+    "recovery": "test/recovery/disaster-recovery.spec.ts"
+  },
+  "status": "release-candidate"
+}
