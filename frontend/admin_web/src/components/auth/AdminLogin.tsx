@@ -7,7 +7,7 @@ interface AdminLoginProps {
 }
 
 export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onForgotPassword }) => {
-  const [email, setEmail] = useState('admin@savetogether.in');
+  const [email, setEmail] = useState('ashishkumar1932005@gmail.com');
   const [password, setPassword] = useState('Admin@2026!');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -37,7 +37,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onForgotPassw
 
     setTimeout(() => {
       setIsLoading(false);
-      if (email === 'admin@savetogether.in' && password === 'Admin@2026!') {
+      if ((email === 'ashishkumar1932005@gmail.com' || email === 'admin@savetogether.in') && password === 'Admin@2026!') {
         onSuccess(email);
       } else {
         setError('Invalid email or password.');
@@ -112,7 +112,7 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onForgotPassw
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@savetogether.in"
+                    placeholder="ashishkumar1932005@gmail.com"
                     className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all"
                   />
                 </div>
@@ -183,9 +183,9 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onSuccess, onForgotPassw
               <button
                 type="button"
                 onClick={() => {
-                  setEmail('admin@savetogether.in');
+                  setEmail('ashishkumar1932005@gmail.com');
                   setPassword('Admin@2026!');
-                  onSuccess('admin@savetogether.in');
+                  onSuccess('ashishkumar1932005@gmail.com');
                 }}
                 className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 text-xs transition-all cursor-pointer"
               >

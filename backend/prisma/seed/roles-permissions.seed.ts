@@ -81,12 +81,12 @@ export const seedRolesAndPermissions = async (prisma: any) => {
 
   if (prisma.adminUser?.upsert) {
     await prisma.adminUser.upsert({
-      where: { email: 'ashish.admin@savetogether.in' },
+      where: { email: 'ashishkumar1932005@gmail.com' },
       update: {},
       create: {
         id: 'ADM1001',
         name: 'Ashish Kumar',
-        email: 'ashish.admin@savetogether.in',
+        email: 'ashishkumar1932005@gmail.com',
         passwordHash: '$2b$10$e7b5q2k4...hashedpassword',
         roleType: 'SUPER_ADMIN',
         twoFactorEnabled: true,

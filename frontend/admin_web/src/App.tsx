@@ -7,7 +7,7 @@ import { ExecutiveDashboard } from './components/dashboard/ExecutiveDashboard';
 
 export function App() {
   const [authState, setAuthState] = useState<'login' | '2fa' | 'forgot' | 'dashboard'>('login');
-  const [adminEmail, setAdminEmail] = useState<string>('admin@savetogether.in');
+  const [adminEmail, setAdminEmail] = useState<string>('ashishkumar1932005@gmail.com');
 
   // If authenticated, render High-Fidelity Executive Dashboard
   if (authState === 'dashboard') {
