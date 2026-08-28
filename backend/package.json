@@ -15,7 +15,11 @@
     "test:monitoring": "ts-node test/monitoring/monitoring-metrics.spec.ts",
     "test:recovery": "ts-node test/recovery/disaster-recovery.spec.ts",
     "test:db": "ts-node test/database/database-verification.spec.ts",
-    "test:golden": "ts-node test/e2e/golden-path.spec.ts"
+    "test:golden": "ts-node test/e2e/golden-path.spec.ts",
+    "test:qa:pricing": "ts-node test/qa/pricing-qa.spec.ts",
+    "test:qa:concurrency": "ts-node test/qa/concurrency-qa.spec.ts",
+    "test:qa:payment": "ts-node test/qa/payment-qa.spec.ts",
+    "test:qa": "npm run test:qa:pricing && npm run test:qa:concurrency && npm run test:qa:payment"
   },
   "dependencies": {
     "cors": "^2.8.5",
