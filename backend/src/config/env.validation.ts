@@ -18,10 +18,27 @@ export function validateEnvironment(config: Record<string, any>): Record<string,
   const missingCritical = criticalVariables.filter((key) => !process.env[key] && !config[key]);
 
   if (missingCritical.length > 0) {
-    if (nodeEnv === 'production') {
-      throw new Error(`❌ Production startup failed! Missing critical environment variables: ${missingCritical.join(', ')}`);
+    if (nodeEnv === 'production' || nodeEnv === 'staging') {
+      throw new Error(`❌ Startup failed in [${nodeEnv.toUpperCase()}] mode! Missing critical environment variables: ${missingCritical.join(', ')}`);
     } else {
       console.warn(`⚠️ Development Warning: Missing variables [${missingCritical.join(', ')}]. Fallback local values loaded.`);
+    }
+  }
+
+  // Cross-environment isolation checks
+  if (nodeEnv === 'production' || nodeEnv === 'staging') {
+    const dbUrl = process.env.DATABASE_URL || config.database?.url || '';
+    if (dbUrl.includes('savetogether_db') || dbUrl.includes('localhost')) {
+      if (nodeEnv === 'production') {
+        throw new Error(`⛔ SAFETY GUARD FAILURE: Production cannot connect to local or dev database (${dbUrl})!`);
+      } else if (nodeEnv === 'staging' && !dbUrl.includes('staging')) {
+        console.warn(`⚠️ Staging Warning: DATABASE_URL should point to a dedicated staging database.`);
+      }
+    }
+
+    const jwtSecret = process.env.JWT_SECRET || config.jwt?.secret;
+    if (jwtSecret === 'savetogether_jwt_super_secret_key_2026') {
+      throw new Error(`⛔ SAFETY GUARD FAILURE: Default development JWT secret cannot be used in [${nodeEnv.toUpperCase()}] environment!`);
     }
   }
 
