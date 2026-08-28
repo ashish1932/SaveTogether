@@ -46,7 +46,7 @@ export class ApiClient {
     let response = await fetch(url, { ...options, headers });
 
     // Handle 401 Unauthorized & Token Refresh (Step 41.11)
-    if (response.status === 401 && this.refreshToken && !endpoint.includes('/auth/refresh') && !endpoint.includes('/auth/login')) {
+    if (response.status === 401 && this.refreshToken && !endpoint.includes('auth/refresh') && !endpoint.includes('auth/login') && !endpoint.includes('auth/verify')) {
       const refreshed = await this.tryTokenRefresh();
       if (refreshed) {
         headers['Authorization'] = `Bearer ${this.accessToken}`;

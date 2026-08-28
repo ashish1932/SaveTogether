@@ -83,6 +83,6 @@ export class SaveTogetherSdk {
   }
 
   public async getAdminOverview() {
-    return this.client.request('/admin/analytics/overview', { method: 'GET' });
+    return this.client.request('/admin/analytics/summary', { method: 'GET' });
   }
 }

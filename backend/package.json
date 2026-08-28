@@ -14,7 +14,8 @@
     "test:production": "ts-node test/production/production-smoke.spec.ts",
     "test:monitoring": "ts-node test/monitoring/monitoring-metrics.spec.ts",
     "test:recovery": "ts-node test/recovery/disaster-recovery.spec.ts",
-    "test:db": "ts-node test/database/database-verification.spec.ts"
+    "test:db": "ts-node test/database/database-verification.spec.ts",
+    "test:golden": "ts-node test/e2e/golden-path.spec.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
