@@ -2,17 +2,23 @@
   "version": "1.0.0",
   "releaseDate": "2026-08-28",
   "releaseBranch": "release/v1.0.0",
+  "releaseTag": "v1.0.0-rc.1",
+  "commitSha": "e3e8fefd31a174620568de7c50d9450b0c9b9f88",
+  "repository": "https://github.com/ashish1932/SaveTogether",
   "components": {
     "backend": {
       "version": "1.0.0",
       "framework": "Express + TypeScript",
       "database": "PostgreSQL 16 + Prisma",
       "queue": "Redis 7 + BullMQ",
-      "apiPrefix": "/api/v1"
+      "apiPrefix": "/api/v1",
+      "modules": 35,
+      "endpoints": "100+",
+      "testSuites": 8
     },
     "mobile": {
       "version": "1.0.0",
-      "framework": "React Native + Expo",
+      "framework": "Flutter + Dart",
       "platform": ["android", "ios"]
     },
     "admin": {
@@ -29,5 +35,15 @@
     "monitoring": "test/monitoring/monitoring-metrics.spec.ts",
     "recovery": "test/recovery/disaster-recovery.spec.ts"
   },
-  "status": "release-candidate"
+  "testResults": {
+    "critical": "7/7 PASSED",
+    "e2e": "12/12 PASSED",
+    "integration": "12/12 PASSED",
+    "staging": "3/3 PASSED",
+    "production": "3/3 PASSED",
+    "monitoring": "3/3 PASSED",
+    "recovery": "3/3 PASSED"
+  },
+  "status": "release-candidate",
+  "frozenAt": "2026-08-28T05:29:00Z"
 }
