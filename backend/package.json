@@ -13,7 +13,8 @@
     "test:staging": "ts-node test/staging/staging-smoke.spec.ts",
     "test:production": "ts-node test/production/production-smoke.spec.ts",
     "test:monitoring": "ts-node test/monitoring/monitoring-metrics.spec.ts",
-    "test:recovery": "ts-node test/recovery/disaster-recovery.spec.ts"
+    "test:recovery": "ts-node test/recovery/disaster-recovery.spec.ts",
+    "test:db": "ts-node test/database/database-verification.spec.ts"
   },
   "dependencies": {
     "cors": "^2.8.5",
