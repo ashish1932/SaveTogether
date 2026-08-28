@@ -1,7 +1,8 @@
 services:
   - type: web
     name: savetogether-backend
-    env: node
+    runtime: node
+    plan: starter
     rootDir: backend
     buildCommand: npm install && npm run build
     startCommand: npm run start
@@ -24,7 +25,9 @@ databases:
   - name: savetogether-db
     databaseName: savetogether_production
     user: savetogether_user
+    plan: starter
 
   - type: redis
     name: savetogether-redis
+    plan: starter
     ipAllowList: []
